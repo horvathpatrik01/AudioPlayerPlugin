@@ -11,13 +11,36 @@
 
 //==============================================================================
 AudioPlayerPluginAudioProcessorEditor::AudioPlayerPluginAudioProcessorEditor (AudioPlayerPluginAudioProcessor& p)
-    : AudioProcessorEditor (&p), audioProcessor (p)
+    : AudioProcessorEditor (&p), audioProcessor (p), m_Openbutton("Open"), m_Playbutton("Play"), m_Stopbutton("Stop")
 {
     // Make sure that before the constructor has finished, you've set the
     // editor's size to whatever you need it to be.
-    m_Openbutton.onClick = [this] {openbuttonclicked(); };
+    p.root = juce::File::getSpecialLocation(juce::File::userDesktopDirectory);
+    m_Stopbutton.setColour(juce::TextButton::buttonColourId, juce::Colours::red);
+    m_Playbutton.setColour(juce::TextButton::buttonColourId, juce::Colours::green);
+    m_Playbutton.setEnabled(false);
+    m_Stopbutton.setEnabled(false);
+    m_Openbutton.onClick = [this] 
+    {
+        FileChooser = std::make_unique<juce::FileChooser>("Choose File", audioProcessor.root, "*");
+        openbuttonclicked();
+        m_Playbutton.setEnabled(true);
+    };
     addAndMakeVisible(m_Openbutton);
+
+    m_Playbutton.onClick = [this] 
+    {
+        playbuttonclicked();
+    };
+    addAndMakeVisible(m_Playbutton);
+    m_Stopbutton.onClick = [this] 
+    {
+        stopbuttonclicked();
+    };
+    addAndMakeVisible(m_Stopbutton);
     setSize (400, 300);
+    p.formatManager.registerBasicFormats();
+    p.transport.addChangeListener(this);
 }
 
 AudioPlayerPluginAudioProcessorEditor::~AudioPlayerPluginAudioProcessorEditor()
@@ -38,8 +61,104 @@ void AudioPlayerPluginAudioProcessorEditor::paint (juce::Graphics& g)
 void AudioPlayerPluginAudioProcessorEditor::resized()
 {
     m_Openbutton.setBounds(10, 10, getWidth() - 20, 30);
+    m_Playbutton.setBounds(10, 50, getWidth() - 20, 30);
+    m_Stopbutton.setBounds(10, 90, getWidth() - 20, 30);
+
 }
 
-void AudioPlayerPluginAudioProcessorEditor::openbuttonclicked() {
+void AudioPlayerPluginAudioProcessorEditor::openbuttonclicked() 
+{
     DBG("Clicked");
+    //choose a file
+    const auto fileChooserFlags = juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectFiles | juce::FileBrowserComponent::canSelectDirectories;
+    //if the user chooses a file
+    FileChooser->launchAsync(fileChooserFlags, [&](const juce::FileChooser& chooser) 
+    {
+    //what did the user choose?
+    juce::File result(chooser.getResult());
+    if (result.getFileExtension() == ".wav" || result.getFileExtension() == ".mp3")
+    {
+        audioProcessor.savedFile = result;
+        audioProcessor.root = result.getParentDirectory().getFullPathName();
+        //read the file
+        audioProcessor.mFormatReader = audioProcessor.formatManager.createReaderFor(result);
+        //get the file ready to play
+        if (audioProcessor.mFormatReader != nullptr)
+        {
+            std::unique_ptr<juce::AudioFormatReaderSource> tempSource(new juce::AudioFormatReaderSource(audioProcessor.mFormatReader, true));
+
+            audioProcessor.transport.setSource(tempSource.get());
+            transportStateChanged(AudioPlayerPluginAudioProcessor::Stopped);
+
+            audioProcessor.playSource.reset(tempSource.release());
+        }
+    }
+    DBG(result.getFileName());
+    });
+            
+}
+
+void AudioPlayerPluginAudioProcessorEditor::playbuttonclicked() 
+{
+    transportStateChanged(AudioPlayerPluginAudioProcessor::Starting);
+}
+
+void AudioPlayerPluginAudioProcessorEditor::stopbuttonclicked()
+{
+    transportStateChanged(AudioPlayerPluginAudioProcessor::Stopping);
+}
+
+void AudioPlayerPluginAudioProcessorEditor::transportStateChanged(AudioPlayerPluginAudioProcessor::TransportState newState)
+{
+    if (newState != audioProcessor.State)
+    {
+        audioProcessor.State = newState;
+
+        switch (audioProcessor.State)
+        {
+            //Stopped
+             //bring transport back to the beginning
+        case AudioPlayerPluginAudioProcessor::Stopped:
+            m_Playbutton.setEnabled(true);
+            m_Stopbutton.setEnabled(false);
+            audioProcessor.transport.setPosition(0.0);
+            break;
+            //Starting
+            //stopbutton enable
+            //transport play
+        case AudioPlayerPluginAudioProcessor::Starting:
+            m_Stopbutton.setEnabled(true);
+            m_Playbutton.setEnabled(false);
+            audioProcessor.transport.start();
+            break;
+            //Stopping
+           //playbutton enable
+           //transport stop
+        case AudioPlayerPluginAudioProcessor::Stopping:
+            m_Playbutton.setEnabled(true);
+            m_Stopbutton.setEnabled(false);
+            audioProcessor.transport.stop();
+            break;
+        case AudioPlayerPluginAudioProcessor::Playing:
+            m_Playbutton.setEnabled(false);
+            m_Stopbutton.setEnabled(true);
+            break;
+        }
+    }
+}
+
+
+void AudioPlayerPluginAudioProcessorEditor::changeListenerCallback(juce::ChangeBroadcaster* source)
+{
+    if (source == &audioProcessor.transport)
+    {
+        if (audioProcessor.transport.isPlaying())
+        {
+            transportStateChanged(AudioPlayerPluginAudioProcessor::Playing);
+        }
+        else
+        {
+            transportStateChanged(AudioPlayerPluginAudioProcessor::Stopped);
+        }
+    }
 }
