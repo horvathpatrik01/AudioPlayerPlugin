@@ -22,11 +22,13 @@ AudioPlayerPluginAudioProcessor::AudioPlayerPluginAudioProcessor()
                        )
 #endif
 {
+    formatManager.registerBasicFormats();
     State = (Stopped);
 }
 
 AudioPlayerPluginAudioProcessor::~AudioPlayerPluginAudioProcessor()
 {
+    mFormatReader = nullptr;
 }
 
 //==============================================================================
@@ -103,6 +105,7 @@ void AudioPlayerPluginAudioProcessor::releaseResources()
 {
     // When playback stops, you can use this as an opportunity to free up any
     // spare memory, etc.
+    transport.releaseResources();
 }
 
 #ifndef JucePlugin_PreferredChannelConfigurations
@@ -184,6 +187,7 @@ void AudioPlayerPluginAudioProcessor::setStateInformation (const void* data, int
     // You should use this method to restore your parameters from this memory block,
     // whose contents will have been created by the getStateInformation() call.
 }
+
 //==============================================================================
 // This creates new instances of the plugin..
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()

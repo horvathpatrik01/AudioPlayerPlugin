@@ -64,8 +64,11 @@ public:
     {
         Stopped,
         Starting,
+        Playing,
+        Pausing,
+        Paused,
         Stopping,
-        Playing
+        
     };
     TransportState State;
 private:
