@@ -1,1 +1,1 @@
-Commit changes here first before merging it into the master branch.
+Commit changes on develop branch first before merging it into the master branch.
