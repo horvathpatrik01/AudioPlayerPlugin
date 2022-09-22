@@ -29,6 +29,7 @@ AudioPlayerPluginAudioProcessor::AudioPlayerPluginAudioProcessor()
 AudioPlayerPluginAudioProcessor::~AudioPlayerPluginAudioProcessor()
 {
     mFormatReader = nullptr;
+    transport.setSource(nullptr);
 }
 
 //==============================================================================
@@ -106,6 +107,7 @@ void AudioPlayerPluginAudioProcessor::releaseResources()
     // When playback stops, you can use this as an opportunity to free up any
     // spare memory, etc.
     transport.releaseResources();
+
 }
 
 #ifndef JucePlugin_PreferredChannelConfigurations
@@ -155,12 +157,12 @@ void AudioPlayerPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& bu
     // the samples and the outer loop is handling the channels.
     // Alternatively, you can process the samples with the channels
     // interleaved by keeping the same state.
+    transport.getNextAudioBlock(juce::AudioSourceChannelInfo(buffer));
     for (int channel = 0; channel < totalNumInputChannels; ++channel)
     {
-        auto* channelData = buffer.getWritePointer (channel);
-
-        // ..do something to the data...
+        //auto* channelData = buffer.getWritePointer (channel);
     }
+    
 }
 
 //==============================================================================
