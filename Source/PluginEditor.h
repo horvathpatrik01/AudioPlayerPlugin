@@ -14,7 +14,7 @@
 //==============================================================================
 /**
 */
-class AudioPlayerPluginAudioProcessorEditor  : public juce::AudioProcessorEditor, juce::ChangeListener
+class AudioPlayerPluginAudioProcessorEditor  : public juce::AudioProcessorEditor, juce::ChangeListener, juce::Slider::Listener
 {
 public:
     AudioPlayerPluginAudioProcessorEditor (AudioPlayerPluginAudioProcessor&);
@@ -25,10 +25,12 @@ public:
     void resized() override;
     void transportStateChanged(AudioPlayerPluginAudioProcessor::TransportState newState);
     void changeListenerCallback(juce::ChangeBroadcaster* source) override;
+    void sliderValueChanged(juce::Slider* slider)override;
 private:
     // This reference is provided as a quick way for your editor to
     // access the processor object that created it.
     AudioPlayerPluginAudioProcessor& audioProcessor;
+    juce::Slider     gainslider;
     juce::TextButton m_Openbutton;
     juce::TextButton m_Playbutton;
     juce::TextButton m_Stopbutton;

@@ -38,8 +38,14 @@ AudioPlayerPluginAudioProcessorEditor::AudioPlayerPluginAudioProcessorEditor (Au
         stopbuttonclicked();
     };
     addAndMakeVisible(m_Stopbutton);
+    gainslider.setSliderStyle(juce::Slider::SliderStyle::LinearVertical);
+    gainslider.setTextBoxStyle(juce::Slider::TextBoxBelow, true, 50, 20);
+    gainslider.setRange(-60.0f, 6.0f, 0.01f);
+    gainslider.setValue(0.0f);
+    addAndMakeVisible(gainslider);
     setSize (400, 300);
     p.transport.addChangeListener(this);
+    gainslider.addListener(this);
 }
 
 AudioPlayerPluginAudioProcessorEditor::~AudioPlayerPluginAudioProcessorEditor()
@@ -62,7 +68,7 @@ void AudioPlayerPluginAudioProcessorEditor::resized()
     m_Openbutton.setBounds(10, 10, getWidth() - 20, 30);
     m_Playbutton.setBounds(10, 50, getWidth() - 20, 30);
     m_Stopbutton.setBounds(10, 90, getWidth() - 20, 30);
-
+    gainslider.setBounds(getWidth() / 2 - 40, 150, 80, 100);
 }
 
 void AudioPlayerPluginAudioProcessorEditor::openbuttonclicked() 
@@ -156,7 +162,7 @@ void AudioPlayerPluginAudioProcessorEditor::transportStateChanged(AudioPlayerPlu
             break;
         case AudioPlayerPluginAudioProcessor::Paused:
             m_Playbutton.setButtonText("Resume");
-            m_Stopbutton.setButtonText("Return to Zero");
+            m_Stopbutton.setButtonText("Restart");
             break;
             //Stopping
            //playbutton enable
@@ -170,7 +176,7 @@ void AudioPlayerPluginAudioProcessorEditor::transportStateChanged(AudioPlayerPlu
     }
 }
 
-
+//Callback functions
 void AudioPlayerPluginAudioProcessorEditor::changeListenerCallback(juce::ChangeBroadcaster* source)
 {
     if (source == &audioProcessor.transport)
@@ -188,5 +194,13 @@ void AudioPlayerPluginAudioProcessorEditor::changeListenerCallback(juce::ChangeB
         {
             transportStateChanged(AudioPlayerPluginAudioProcessor::Paused);
         }
+    }
+}
+
+void AudioPlayerPluginAudioProcessorEditor::sliderValueChanged(juce::Slider* slider)
+{
+    if (slider == &gainslider)
+    {
+        audioProcessor.gain = gainslider.getValue();
     }
 }

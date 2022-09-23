@@ -158,9 +158,10 @@ void AudioPlayerPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& bu
     // Alternatively, you can process the samples with the channels
     // interleaved by keeping the same state.
     transport.getNextAudioBlock(juce::AudioSourceChannelInfo(buffer));
+    transport.setGain(juce::Decibels::decibelsToGain(gain-15.0f,-75.0f));
     for (int channel = 0; channel < totalNumInputChannels; ++channel)
     {
-        //auto* channelData = buffer.getWritePointer (channel);
+        auto* channelData = buffer.getWritePointer (channel);
     }
     
 }
