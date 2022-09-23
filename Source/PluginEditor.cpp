@@ -11,33 +11,38 @@
 
 //==============================================================================
 AudioPlayerPluginAudioProcessorEditor::AudioPlayerPluginAudioProcessorEditor (AudioPlayerPluginAudioProcessor& p)
-    : AudioProcessorEditor (&p), audioProcessor (p), m_Openbutton("Open"), m_Playbutton("Play"), m_Stopbutton("Stop")
+    : AudioProcessorEditor (&p), audioProcessor (p), openbutton("Open"), playbutton("Play"), stopbutton("Stop"),timeline(p.timeprogress)
 {
     // Make sure that before the constructor has finished, you've set the
     // editor's size to whatever you need it to be.
+    timeline.setColour(juce::ProgressBar::backgroundColourId, juce::Colours::black);
+    timeline.setColour(juce::ProgressBar::foregroundColourId, juce::Colour::fromFloatRGBA(227,51,48,89));
+    Component::addAndMakeVisible(timeline);
     p.root = juce::File::getSpecialLocation(juce::File::userDesktopDirectory);
-    m_Stopbutton.setColour(juce::TextButton::buttonColourId, juce::Colours::red);
-    m_Playbutton.setColour(juce::TextButton::buttonColourId, juce::Colours::green);
-    m_Playbutton.setEnabled(false);
-    m_Stopbutton.setEnabled(false);
-    m_Openbutton.onClick = [this] 
+    stopbutton.setColour(juce::TextButton::buttonColourId, juce::Colours::red);
+    playbutton.setColour(juce::TextButton::buttonColourId, juce::Colours::green);
+    playbutton.setEnabled(false);
+    stopbutton.setEnabled(false);
+    openbutton.onClick = [this] 
     {
         FileChooser = std::make_unique<juce::FileChooser>("Choose File", audioProcessor.root, "*");
         openbuttonclicked();
-        m_Playbutton.setEnabled(true);
+        playbutton.setEnabled(true);
     };
-    addAndMakeVisible(m_Openbutton);
+   addAndMakeVisible(openbutton);
 
-    m_Playbutton.onClick = [this] 
+    playbutton.onClick = [this] 
     {
         playbuttonclicked();
     };
-    addAndMakeVisible(m_Playbutton);
-    m_Stopbutton.onClick = [this] 
+    addAndMakeVisible(playbutton);
+    stopbutton.onClick = [this] 
     {
         stopbuttonclicked();
     };
-    addAndMakeVisible(m_Stopbutton);
+    addAndMakeVisible(stopbutton);
+    loopbutton.setButtonText("Loop?");
+    addAndMakeVisible(loopbutton);
     gainslider.setSliderStyle(juce::Slider::SliderStyle::LinearVertical);
     gainslider.setTextBoxStyle(juce::Slider::TextBoxBelow, true, 50, 20);
     gainslider.setRange(-60.0f, 6.0f, 0.01f);
@@ -46,6 +51,7 @@ AudioPlayerPluginAudioProcessorEditor::AudioPlayerPluginAudioProcessorEditor (Au
     setSize (400, 300);
     p.transport.addChangeListener(this);
     gainslider.addListener(this);
+    loopbutton.addListener(this);
 }
 
 AudioPlayerPluginAudioProcessorEditor::~AudioPlayerPluginAudioProcessorEditor()
@@ -57,7 +63,6 @@ void AudioPlayerPluginAudioProcessorEditor::paint (juce::Graphics& g)
 {
     // (Our component is opaque, so we must completely fill the background with a solid colour)
     g.fillAll (getLookAndFeel().findColour (juce::ResizableWindow::backgroundColourId));
-
     //g.setColour (juce::Colours::white);
    // g.setFont (15.0f);
    // g.drawFittedText ("Hello World!", getLocalBounds(), juce::Justification::centred, 1);
@@ -65,10 +70,13 @@ void AudioPlayerPluginAudioProcessorEditor::paint (juce::Graphics& g)
 
 void AudioPlayerPluginAudioProcessorEditor::resized()
 {
-    m_Openbutton.setBounds(10, 10, getWidth() - 20, 30);
-    m_Playbutton.setBounds(10, 50, getWidth() - 20, 30);
-    m_Stopbutton.setBounds(10, 90, getWidth() - 20, 30);
+    openbutton.setBounds(10, 10, getWidth() - 20, 30);
+    playbutton.setBounds(10, 50, getWidth() - 20, 30);
+    stopbutton.setBounds(10, 90, getWidth() - 20, 30);
     gainslider.setBounds(getWidth() / 2 - 40, 150, 80, 100);
+    timeline.setBounds(10, getHeight() - 30, getWidth() - 20, 10);
+    loopbutton.setBounds(10, 150, 30, 30);
+    loopbutton.changeWidthToFitText();
 }
 
 void AudioPlayerPluginAudioProcessorEditor::openbuttonclicked() 
@@ -93,8 +101,12 @@ void AudioPlayerPluginAudioProcessorEditor::openbuttonclicked()
         {
             std::unique_ptr<juce::AudioFormatReaderSource> tempSource(new juce::AudioFormatReaderSource(audioProcessor.mFormatReader, true));
             audioProcessor.transport.setSource(tempSource.get(),0,nullptr,audioProcessor.mFormatReader->sampleRate);
+            //get the length of the file
+            audioProcessor.lengthinseconds=audioProcessor.transport.getLengthInSeconds();
             transportStateChanged(AudioPlayerPluginAudioProcessor::Stopped);
             audioProcessor.playSource.reset(tempSource.release());
+            audioProcessor.timeprogress = 0.0;
+            DBG(std::to_string(audioProcessor.lengthinseconds));
             
         }
     }
@@ -110,7 +122,7 @@ void AudioPlayerPluginAudioProcessorEditor::playbuttonclicked()
         transportStateChanged(AudioPlayerPluginAudioProcessor::Starting);
     }
         
-    else if (audioProcessor.State == AudioPlayerPluginAudioProcessor::Playing)
+    else if (audioProcessor.State == AudioPlayerPluginAudioProcessor::Playing || audioProcessor.State == AudioPlayerPluginAudioProcessor::Looping)
     {
         transportStateChanged(AudioPlayerPluginAudioProcessor::Pausing);
     }
@@ -137,53 +149,77 @@ void AudioPlayerPluginAudioProcessorEditor::transportStateChanged(AudioPlayerPlu
         switch (audioProcessor.State)
         {
             //Stopped
-             //bring transport back to the beginning
+                //bring transport back to the beginning
+                //stop timer
         case AudioPlayerPluginAudioProcessor::Stopped:
-            m_Playbutton.setButtonText("Play");
-            m_Stopbutton.setButtonText("Stop");
-            m_Playbutton.setEnabled(true);
-            m_Stopbutton.setEnabled(false);
+            playbutton.setButtonText("Play");
+            stopbutton.setButtonText("Stop");
+            playbutton.setEnabled(true);
+            stopbutton.setEnabled(false);
             audioProcessor.transport.setPosition(0.0);
+            audioProcessor.time = 0.0F;
+            audioProcessor.timeprogress = 0.0;
+            audioProcessor.stopTimer();
             break;
             //Starting
-            //stopbutton enable
-            //transport play
+                //stopbutton enable
+                //transport play
+                //timer start
         case AudioPlayerPluginAudioProcessor::Starting:
-            m_Stopbutton.setEnabled(true);
+            stopbutton.setEnabled(true);
             audioProcessor.transport.start();
+            audioProcessor.startTimer();
             break;
         case AudioPlayerPluginAudioProcessor::Playing:
-            m_Playbutton.setButtonText("Pause");
-            m_Stopbutton.setButtonText("Stop");
-            m_Stopbutton.setEnabled(true);
+            playbutton.setButtonText("Pause");
+            stopbutton.setButtonText("Stop");
+            stopbutton.setEnabled(true);
             break;
+            //Pausing
+                //transport stop
+                //timer stop
         case AudioPlayerPluginAudioProcessor::Pausing:
             audioProcessor.transport.stop();
+            audioProcessor.stopTimer();
             break;
         case AudioPlayerPluginAudioProcessor::Paused:
-            m_Playbutton.setButtonText("Resume");
-            m_Stopbutton.setButtonText("Restart");
+            playbutton.setButtonText("Resume");
+            stopbutton.setButtonText("Back to Start");
             break;
             //Stopping
-           //playbutton enable
-           //transport stop
+                //playbutton enable
+                //transport stop
+                //timer stop
         case AudioPlayerPluginAudioProcessor::Stopping:
-            m_Playbutton.setEnabled(true);
-            m_Stopbutton.setEnabled(false);
+            playbutton.setEnabled(true);
+            stopbutton.setEnabled(false);
             audioProcessor.transport.stop();
+            audioProcessor.stopTimer();
             break;
+        case AudioPlayerPluginAudioProcessor::Looping:
+            playbutton.setButtonText("Pause");
+            stopbutton.setButtonText("Stop");
         }
     }
 }
-
-//Callback functions
+/*****************************************************************
+                        Callback functions
+*****************************************************************/
 void AudioPlayerPluginAudioProcessorEditor::changeListenerCallback(juce::ChangeBroadcaster* source)
 {
     if (source == &audioProcessor.transport)
     {
         if (audioProcessor.transport.isPlaying())
         {
-            transportStateChanged(AudioPlayerPluginAudioProcessor::Playing);
+            if (!isLooped) 
+            {
+                transportStateChanged(AudioPlayerPluginAudioProcessor::Playing);
+
+            }
+            else
+            {
+                transportStateChanged(AudioPlayerPluginAudioProcessor::Looping);
+            }
         }
         else if((audioProcessor.State == AudioPlayerPluginAudioProcessor::Stopping)|| 
             (audioProcessor.State == AudioPlayerPluginAudioProcessor::Playing))
@@ -194,6 +230,18 @@ void AudioPlayerPluginAudioProcessorEditor::changeListenerCallback(juce::ChangeB
         {
             transportStateChanged(AudioPlayerPluginAudioProcessor::Paused);
         }
+        else if (audioProcessor.State == AudioPlayerPluginAudioProcessor::Looping)
+        {
+            //reset the progressbar and the time
+            if (audioProcessor.timeprogress >= 1.0)
+            {
+                audioProcessor.timeprogress = 0.0;
+                audioProcessor.time = 0.0F;
+            }
+            //bring transport back to the beginning
+            audioProcessor.transport.setPosition(0.0);
+            transportStateChanged(AudioPlayerPluginAudioProcessor::Starting);
+        }
     }
 }
 
@@ -202,5 +250,31 @@ void AudioPlayerPluginAudioProcessorEditor::sliderValueChanged(juce::Slider* sli
     if (slider == &gainslider)
     {
         audioProcessor.gain = gainslider.getValue();
+    }
+}
+
+void AudioPlayerPluginAudioProcessorEditor::buttonClicked(juce::Button* button) 
+{
+    if (button == &loopbutton)
+    {
+        isLooped = !isLooped;
+        audioProcessor.transport.setLooping(isLooped);
+        if (audioProcessor.transport.isPlaying())
+        {
+            //based on the current state of isLooped change the transportState to Looping
+            // or Playing
+            if (isLooped)
+            {
+                transportStateChanged(AudioPlayerPluginAudioProcessor::Looping);
+            }
+            else
+            {
+                transportStateChanged(AudioPlayerPluginAudioProcessor::Playing);
+            }
+        }
+        else
+        {
+            //Do nothing...
+        }
     }
 }

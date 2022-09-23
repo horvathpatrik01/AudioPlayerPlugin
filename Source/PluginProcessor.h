@@ -13,7 +13,7 @@
 //==============================================================================
 /**
 */
-class AudioPlayerPluginAudioProcessor  : public juce::AudioProcessor
+class AudioPlayerPluginAudioProcessor  : public juce::AudioProcessor, juce::Timer
                             #if JucePlugin_Enable_ARA
                              , public juce::AudioProcessorARAExtension
                             #endif
@@ -68,12 +68,20 @@ public:
         Pausing,
         Paused,
         Stopping,
-        
+        Looping
     };
     TransportState State;
     float gain=0.f;
+    float time = 0.0F;
+    double timeprogress;
+    int64_t lengthinseconds = 0;
+    //increase time by 1/{Hz} and set progress to time/lengthinseconds
+    void timerCallback();
+    //start timer
+    void startTimer();
+    //stop timer
+    void stopTimer();
 private:
-   
    //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AudioPlayerPluginAudioProcessor)
 };

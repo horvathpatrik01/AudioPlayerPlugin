@@ -24,10 +24,15 @@ AudioPlayerPluginAudioProcessor::AudioPlayerPluginAudioProcessor()
 {
     formatManager.registerBasicFormats();
     State = (Stopped);
+    if (juce::Timer::isTimerRunning())
+    {
+        juce::Timer::stopTimer();
+    }
 }
 
 AudioPlayerPluginAudioProcessor::~AudioPlayerPluginAudioProcessor()
 {
+    juce::Timer::stopTimer();
     mFormatReader = nullptr;
     transport.setSource(nullptr);
 }
@@ -191,6 +196,24 @@ void AudioPlayerPluginAudioProcessor::setStateInformation (const void* data, int
     // whose contents will have been created by the getStateInformation() call.
 }
 
+void AudioPlayerPluginAudioProcessor::timerCallback() 
+{
+    time = time + 1.0/60.0;
+    timeprogress = time / lengthinseconds;
+}
+
+void AudioPlayerPluginAudioProcessor::startTimer()
+{
+    juce::Timer::startTimerHz(60);
+}
+
+void  AudioPlayerPluginAudioProcessor::stopTimer()
+{
+    if (juce::Timer::isTimerRunning())
+    {
+        juce::Timer::stopTimer();
+    }
+}
 //==============================================================================
 // This creates new instances of the plugin..
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()

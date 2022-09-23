@@ -14,7 +14,7 @@
 //==============================================================================
 /**
 */
-class AudioPlayerPluginAudioProcessorEditor  : public juce::AudioProcessorEditor, juce::ChangeListener, juce::Slider::Listener
+class AudioPlayerPluginAudioProcessorEditor  : public juce::AudioProcessorEditor, juce::ChangeListener, juce::Slider::Listener,juce::Button::Listener
 {
 public:
     AudioPlayerPluginAudioProcessorEditor (AudioPlayerPluginAudioProcessor&);
@@ -23,19 +23,28 @@ public:
     //==============================================================================
     void paint (juce::Graphics&) override;
     void resized() override;
-    void transportStateChanged(AudioPlayerPluginAudioProcessor::TransportState newState);
+    //Callback function for the AudioTransportSource 
     void changeListenerCallback(juce::ChangeBroadcaster* source) override;
+    //Callback function for the Slider
     void sliderValueChanged(juce::Slider* slider)override;
+    //Callback function for the ToggleButton
+    void buttonClicked(juce::Button* button)override;
 private:
     // This reference is provided as a quick way for your editor to
     // access the processor object that created it.
     AudioPlayerPluginAudioProcessor& audioProcessor;
     juce::Slider     gainslider;
-    juce::TextButton m_Openbutton;
-    juce::TextButton m_Playbutton;
-    juce::TextButton m_Stopbutton;
+    juce::TextButton openbutton;
+    juce::TextButton playbutton;
+    juce::TextButton stopbutton;
+    juce::ToggleButton loopbutton;
+    bool isLooped=false;
     std::unique_ptr<juce::FileChooser> FileChooser;
+    juce::ProgressBar timeline;
 
+    //Called when a state is changed
+    void transportStateChanged(AudioPlayerPluginAudioProcessor::TransportState newState);
+    //On Clicked events for TextButtons
     void openbuttonclicked();
     void playbuttonclicked();
     void stopbuttonclicked();
