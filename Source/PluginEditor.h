@@ -15,6 +15,7 @@
 /**
 */
 class AudioPlayerPluginAudioProcessorEditor  : public juce::AudioProcessorEditor, juce::ChangeListener, juce::Slider::Listener,juce::Button::Listener
+    ,juce::Timer
 {
 public:
     AudioPlayerPluginAudioProcessorEditor (AudioPlayerPluginAudioProcessor&);
@@ -39,15 +40,16 @@ private:
     juce::TextButton stopbutton;
     juce::ToggleButton loopbutton;
     bool isLooped=false;
-    std::unique_ptr<juce::FileChooser> FileChooser;
     juce::ProgressBar timeline;
-
+    juce::Label TotalLength, ActualTime,Gainlabel,dBlabel;
     //Called when a state is changed
     void transportStateChanged(AudioPlayerPluginAudioProcessor::TransportState newState);
     //On Clicked events for TextButtons
     void openbuttonclicked();
     void playbuttonclicked();
     void stopbuttonclicked();
+    void timerCallback();
+    void setBoundsForTime(int minutes,int seconds);
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AudioPlayerPluginAudioProcessorEditor)
 };
