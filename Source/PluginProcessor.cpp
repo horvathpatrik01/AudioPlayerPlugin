@@ -22,6 +22,7 @@ AudioPlayerPluginAudioProcessor::AudioPlayerPluginAudioProcessor()
                        )
 #endif
 {
+    root = juce::File::getSpecialLocation(juce::File::userDesktopDirectory);
     formatManager.registerBasicFormats();
     State = (Stopped);
     if (juce::Timer::isTimerRunning())
