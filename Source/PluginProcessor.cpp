@@ -199,8 +199,10 @@ void AudioPlayerPluginAudioProcessor::setStateInformation (const void* data, int
 
 void AudioPlayerPluginAudioProcessor::timerCallback() 
 {
+    //time/lengthinseconds needs to be compensated because of the timing delays
+    //It's compensated with the lengthinseconds/60 which is subtracted from lengthinseconds
     time = time + 1.0/60.0;
-    timeprogress = time / lengthinseconds;
+    timeprogress = time / (lengthinseconds-(lengthinseconds / 60));
 }
 
 void AudioPlayerPluginAudioProcessor::startTimer()

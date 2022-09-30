@@ -255,11 +255,8 @@ void AudioPlayerPluginAudioProcessorEditor::changeListenerCallback(juce::ChangeB
         else if (audioProcessor.State == AudioPlayerPluginAudioProcessor::Looping)
         {
             //reset the progressbar and the time
-            if (audioProcessor.timeprogress >= 1.0)
-            {
-                audioProcessor.timeprogress = 0.0;
-                audioProcessor.time = 0.0F;
-            }
+            audioProcessor.timeprogress = 0.0;
+            audioProcessor.time = 0.0F;
             //bring transport back to the beginning
             audioProcessor.transport.setPosition(0.0);
             transportStateChanged(AudioPlayerPluginAudioProcessor::Starting);
@@ -303,9 +300,7 @@ void AudioPlayerPluginAudioProcessorEditor::buttonClicked(juce::Button* button)
 
 void AudioPlayerPluginAudioProcessorEditor::timerCallback()
 {
-    //timeprogress*lengthinseconds needs to be compensated because of the timing delays
-    //It's compensated with the totalLength/60 which is added to lengthinseconds
-    int time = audioProcessor.timeprogress*(audioProcessor.lengthinseconds+(audioProcessor.lengthinseconds/60));
+    int time = audioProcessor.timeprogress * audioProcessor.lengthinseconds;
     int timeinminutes = time/60;
     int remainingseconds = time-(timeinminutes*60);
     juce::String actualtime = std::to_string(timeinminutes).append(":").append(std::to_string(remainingseconds));
