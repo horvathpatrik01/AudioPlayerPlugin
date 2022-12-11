@@ -41,7 +41,7 @@ private:
     juce::ToggleButton loopbutton;
     bool isLooped=false;
     juce::ProgressBar timeline;
-    juce::Label TotalLength, ActualTime,Gainlabel,dBlabel;
+    juce::Label TotalLength, ActualTime,Gainlabel,dBlabel,SongName;
     //Called when a state is changed
     void transportStateChanged(AudioPlayerPluginAudioProcessor::TransportState newState);
     //On Clicked events for TextButtons

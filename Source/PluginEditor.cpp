@@ -60,6 +60,9 @@ AudioPlayerPluginAudioProcessorEditor::AudioPlayerPluginAudioProcessorEditor (Au
     dBlabel.setFont(15.0f);
     dBlabel.setText("dB", juce::NotificationType::dontSendNotification);
     addAndMakeVisible(dBlabel);
+    SongName.setFont(15.0F);
+    SongName.setJustificationType(juce::Justification::centredLeft);
+    addAndMakeVisible(SongName);
     setSize (400, 300);
     p.transport.addChangeListener(this);
     gainslider.addListener(this);
@@ -86,11 +89,12 @@ void AudioPlayerPluginAudioProcessorEditor::resized()
     loopbutton.setBounds(10, 140, 30, 30);
     loopbutton.changeWidthToFitText();
     gainslider.setBounds(getWidth() / 2 - 40, 160, 80, 100);
-    timeline.setBounds(10, getHeight() - 30, getWidth() - 20, 10);
-    TotalLength.setBounds(getWidth() - 55, getHeight() - 50, 50, 20);
-    ActualTime.setBounds(getWidth() - 100, getHeight() - 50, 50, 20);
+    timeline.setBounds(10, getHeight() - 20, getWidth() - 20, 10);
+    TotalLength.setBounds(getWidth() - 55, getHeight() - 40, 50, 20);
+    ActualTime.setBounds(getWidth() - 100, getHeight() - 40, 50, 20);
     Gainlabel.setBounds(getWidth() / 2 - 20, 145, 40, 20);
     dBlabel.setBounds(getWidth()/2+25, 240, 30, 20);
+    SongName.setBounds(10, getHeight() - 40, getWidth() / 2 - 40, 20);
 }
 
 void AudioPlayerPluginAudioProcessorEditor::openbuttonclicked() 
@@ -127,6 +131,7 @@ void AudioPlayerPluginAudioProcessorEditor::openbuttonclicked()
             TotalLength.setText(slashwithlength, juce::NotificationType::dontSendNotification);
             setBoundsForTime(lengthinminutes, remainingseconds);
             ActualTime.setText("0:0", juce::NotificationType::dontSendNotification);
+            SongName.setText(audioProcessor.savedFile.getFileNameWithoutExtension(), juce::NotificationType::dontSendNotification);
         }
     }
     });
@@ -311,17 +316,17 @@ void AudioPlayerPluginAudioProcessorEditor::setBoundsForTime(int minutes,int sec
 {
     if (seconds >= 10 && minutes >=10)
     {
-        TotalLength.setBounds(getWidth() - 60, getHeight() - 50, 50, 20);
-        ActualTime.setBounds(getWidth() - 113, getHeight() - 50, 50, 20);
+        TotalLength.setBounds(getWidth() - 60, getHeight() - 40, 50, 20);
+        ActualTime.setBounds(getWidth() - 113, getHeight() - 40, 50, 20);
     }
     else if (seconds < 10 && minutes < 10)
     {
-        TotalLength.setBounds(getWidth() - 60, getHeight() - 50, 50, 20);
-        ActualTime.setBounds(getWidth() - 97, getHeight() - 50, 50, 20);
+        TotalLength.setBounds(getWidth() - 60, getHeight() - 40, 50, 20);
+        ActualTime.setBounds(getWidth() - 97, getHeight() - 40, 50, 20);
     }
     else
     {
-        TotalLength.setBounds(getWidth() - 60, getHeight() - 50, 50, 20);
-        ActualTime.setBounds(getWidth() - 105, getHeight() - 50, 50, 20);
+        TotalLength.setBounds(getWidth() - 60, getHeight() - 40, 50, 20);
+        ActualTime.setBounds(getWidth() - 105, getHeight() - 40, 50, 20);
     }
 }
