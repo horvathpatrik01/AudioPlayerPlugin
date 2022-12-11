@@ -22,10 +22,20 @@ AudioPlayerPluginAudioProcessor::AudioPlayerPluginAudioProcessor()
                        )
 #endif
 {
+    root = juce::File::getSpecialLocation(juce::File::userDesktopDirectory);
+    formatManager.registerBasicFormats();
+    State = (Stopped);
+    if (juce::Timer::isTimerRunning())
+    {
+        juce::Timer::stopTimer();
+    }
 }
 
 AudioPlayerPluginAudioProcessor::~AudioPlayerPluginAudioProcessor()
 {
+    juce::Timer::stopTimer();
+    mFormatReader = nullptr;
+    transport.setSource(nullptr);
 }
 
 //==============================================================================
@@ -95,12 +105,15 @@ void AudioPlayerPluginAudioProcessor::prepareToPlay (double sampleRate, int samp
 {
     // Use this method as the place to do any pre-playback
     // initialisation that you need..
+    transport.prepareToPlay(samplesPerBlock,sampleRate);
 }
 
 void AudioPlayerPluginAudioProcessor::releaseResources()
 {
     // When playback stops, you can use this as an opportunity to free up any
     // spare memory, etc.
+    transport.releaseResources();
+
 }
 
 #ifndef JucePlugin_PreferredChannelConfigurations
@@ -150,12 +163,13 @@ void AudioPlayerPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& bu
     // the samples and the outer loop is handling the channels.
     // Alternatively, you can process the samples with the channels
     // interleaved by keeping the same state.
+    transport.getNextAudioBlock(juce::AudioSourceChannelInfo(buffer));
+    transport.setGain(juce::Decibels::decibelsToGain(gain-15.0f,-75.0f));
     for (int channel = 0; channel < totalNumInputChannels; ++channel)
     {
         auto* channelData = buffer.getWritePointer (channel);
-
-        // ..do something to the data...
     }
+    
 }
 
 //==============================================================================
@@ -183,6 +197,26 @@ void AudioPlayerPluginAudioProcessor::setStateInformation (const void* data, int
     // whose contents will have been created by the getStateInformation() call.
 }
 
+void AudioPlayerPluginAudioProcessor::timerCallback() 
+{
+    //time/lengthinseconds needs to be compensated because of the timing delays
+    //It's compensated with the lengthinseconds/60 which is subtracted from lengthinseconds
+    time = time + 1.0/60.0;
+    timeprogress = time / (lengthinseconds-(lengthinseconds / 60));
+}
+
+void AudioPlayerPluginAudioProcessor::startTimer()
+{
+    juce::Timer::startTimerHz(60);
+}
+
+void  AudioPlayerPluginAudioProcessor::stopTimer()
+{
+    if (juce::Timer::isTimerRunning())
+    {
+        juce::Timer::stopTimer();
+    }
+}
 //==============================================================================
 // This creates new instances of the plugin..
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()

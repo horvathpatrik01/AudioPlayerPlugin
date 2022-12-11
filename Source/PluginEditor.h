@@ -14,7 +14,8 @@
 //==============================================================================
 /**
 */
-class AudioPlayerPluginAudioProcessorEditor  : public juce::AudioProcessorEditor
+class AudioPlayerPluginAudioProcessorEditor  : public juce::AudioProcessorEditor, juce::ChangeListener, juce::Slider::Listener,juce::Button::Listener
+    ,juce::Timer
 {
 public:
     AudioPlayerPluginAudioProcessorEditor (AudioPlayerPluginAudioProcessor&);
@@ -23,14 +24,32 @@ public:
     //==============================================================================
     void paint (juce::Graphics&) override;
     void resized() override;
-
+    //Callback function for the AudioTransportSource 
+    void changeListenerCallback(juce::ChangeBroadcaster* source) override;
+    //Callback function for the Slider
+    void sliderValueChanged(juce::Slider* slider)override;
+    //Callback function for the ToggleButton
+    void buttonClicked(juce::Button* button)override;
 private:
     // This reference is provided as a quick way for your editor to
     // access the processor object that created it.
     AudioPlayerPluginAudioProcessor& audioProcessor;
-    juce::TextButton m_Openbutton{"Open"};
-
+    juce::Slider     gainslider;
+    juce::TextButton openbutton;
+    juce::TextButton playbutton;
+    juce::TextButton stopbutton;
+    juce::ToggleButton loopbutton;
+    bool isLooped=false;
+    juce::ProgressBar timeline;
+    juce::Label TotalLength, ActualTime,Gainlabel,dBlabel,SongName;
+    //Called when a state is changed
+    void transportStateChanged(AudioPlayerPluginAudioProcessor::TransportState newState);
+    //On Clicked events for TextButtons
     void openbuttonclicked();
+    void playbuttonclicked();
+    void stopbuttonclicked();
+    void timerCallback();
+    void setBoundsForTime(int minutes,int seconds);
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AudioPlayerPluginAudioProcessorEditor)
 };
